@@ -48,7 +48,6 @@ BootStaticLibrary boot_packagefs :
 	ZlibCompressionBase.cpp
 	ZlibDecompressor.cpp
 
-	: -fno-pic
 ;
 
 Includes [ FGristFiles $(HAIKU_PACKAGE_FS_PACKAGE_READER_SOURCES)
