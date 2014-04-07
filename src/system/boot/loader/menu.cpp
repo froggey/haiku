@@ -1446,13 +1446,12 @@ user_menu(BootVolume& _bootVolume, PathBlacklist& _pathBlacklist)
     if (item == NULL) {
         TRACE(("item is NULL!\n"));
     }
-#if 0
 	if (!_bootVolume.IsValid()) {
 		item->SetEnabled(false);
 		menu->ItemAt(0)->Select(true);
 	} else
 		item->SetShortcut('b');
-#endif
+    
     TRACE(("running menu\n"));
 	menu->Run();
 
