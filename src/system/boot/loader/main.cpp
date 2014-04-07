@@ -18,9 +18,9 @@
 #include "file_systems/packagefs/packagefs.h"
 
 
-//#define TRACE_MAIN
+#define TRACE_MAIN
 #ifdef TRACE_MAIN
-#	define TRACE(x) dprintf x
+#	define TRACE(x) kprintf x
 #else
 #	define TRACE(x) ;
 #endif
@@ -35,7 +35,7 @@ main(stage2_args *args)
 		panic("Could not initialize heap!\n");
 
 	TRACE(("boot(): heap initialized...\n"));
-
+#if 0
 	// set debug syslog default
 #if KDEBUG_ENABLE_DEBUG_SYSLOG
 	gKernelArgs.keep_debug_output_buffer = true;
@@ -52,13 +52,15 @@ main(stage2_args *args)
 
 	if (vfs_init(args) < B_OK)
 		panic("Could not initialize VFS!\n");
-
-	dprintf("Welcome to the Haiku boot loader!\n");
+#endif
+	kprintf("Welcome to the Haiku boot loader!\n");
 
 	bool mountedAllVolumes = false;
 
 	BootVolume bootVolume;
 	PathBlacklist pathBlacklist;
+    
+    user_menu(bootVolume, pathBlacklist);
 
 	if (get_boot_file_system(args, bootVolume) != B_OK
 		|| (platform_boot_options() & BOOT_OPTION_MENU) != 0) {

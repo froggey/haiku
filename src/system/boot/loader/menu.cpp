@@ -35,9 +35,9 @@
 #include "RootFileSystem.h"
 
 
-//#define TRACE_MENU
+#define TRACE_MENU
 #ifdef TRACE_MENU
-#	define TRACE(x) dprintf x
+#	define TRACE(x) kprintf x
 #else
 #	define TRACE(x) ;
 #endif
@@ -1131,7 +1131,7 @@ add_safe_mode_menu()
 	item->SetType(MENU_ITEM_MARKABLE);
     item->SetHelpText("Disables IDE DMA, increasing IDE compatibility "
 		"at the expense of performance.");
-
+#if 0
 #if B_HAIKU_PHYSICAL_BITS > 32
 	// check whether we have memory beyond 4 GB
 	bool hasMemoryBeyond4GB = false;
@@ -1157,16 +1157,17 @@ add_safe_mode_menu()
 			"overriding the setting in the kernel settings file.");
 	}
 #endif
-
+#endif
 	platform_add_menus(safeMenu);
 
 	safeMenu->AddSeparatorItem();
 	sBlacklistRootMenu = new(std::nothrow) BlacklistRootMenu;
+#if 0
 	safeMenu->AddItem(item = new(std::nothrow) MenuItem("Blacklist entries",
 		sBlacklistRootMenu));
 	item->SetHelpText("Allows to select system files that shall be ignored. "
 		"Useful e.g. to disable drivers temporarily.");
-
+#endif
 	safeMenu->AddSeparatorItem();
 	safeMenu->AddItem(item = new(nothrow) MenuItem("Return to main menu"));
 
@@ -1280,7 +1281,7 @@ add_debug_menu()
 	item->SetType(MENU_ITEM_MARKABLE);
 	item->SetHelpText("Disables paging when on screen debug output is "
 		"enabled.");
-
+#if 0
 	menu->AddItem(item = new(nothrow) MenuItem("Enable debug syslog"));
 	item->SetType(MENU_ITEM_MARKABLE);
 	item->SetMarked(gKernelArgs.keep_debug_output_buffer);
@@ -1329,7 +1330,7 @@ add_debug_menu()
 		item->SetHelpText("Saves the syslog from the previous Haiku session to "
 			"disk. Currently only FAT32 volumes are supported.");
 	}
-
+#endif
 	menu->AddSeparatorItem();
 	menu->AddItem(item = new(nothrow) MenuItem(
 		"Add advanced debug option"));
@@ -1414,35 +1415,48 @@ user_menu(BootVolume& _bootVolume, PathBlacklist& _pathBlacklist)
 	TRACE(("user_menu: enter\n"));
 
 	// Add boot volume
-	menu->AddItem(item = new(std::nothrow) MenuItem("Select boot volume",
-		add_boot_volume_menu(_bootVolume.RootDirectory())));
-
-	// Add safe mode
-	menu->AddItem(item = new(std::nothrow) MenuItem("Select safe mode options",
-		safeModeMenu = add_safe_mode_menu()));
-
+	//menu->AddItem(item = new(std::nothrow) MenuItem("Select boot volume",
+	//	add_boot_volume_menu(_bootVolume.RootDirectory())));
+    TRACE(("make new item\n"));
+    item = new(std::nothrow) MenuItem("Select safe mode options",
+                                      safeModeMenu = add_safe_mode_menu());
+	TRACE(("add to menu\n"));
+    // Add safe mode
+	menu->AddItem(item);
+    TRACE(("build debug menu\n"));
 	// add debug menu
 	menu->AddItem(item = new(std::nothrow) MenuItem("Select debug options",
 		debugMenu = add_debug_menu()));
 
 	// Add platform dependent menus
+	TRACE(("build platform menu\n"));
 	platform_add_menus(menu);
 
 	menu->AddSeparatorItem();
 
+	TRACE(("build reboot menu\n"));
 	menu->AddItem(item = new(std::nothrow) MenuItem("Reboot"));
 	item->SetTarget(user_menu_reboot);
 	item->SetShortcut('r');
-
+	TRACE(("build continue menu\n"));
 	menu->AddItem(item = new(std::nothrow) MenuItem("Continue booting"));
+    if (menu == NULL) {
+        TRACE(("menu is NULL!\n"));
+    }
+    if (item == NULL) {
+        TRACE(("item is NULL!\n"));
+    }
+#if 0
 	if (!_bootVolume.IsValid()) {
 		item->SetEnabled(false);
 		menu->ItemAt(0)->Select(true);
 	} else
 		item->SetShortcut('b');
-
+#endif
+    TRACE(("running menu\n"));
 	menu->Run();
 
+	TRACE(("done with menu\n"));
 	apply_safe_mode_options(safeModeMenu);
 	apply_safe_mode_options(debugMenu);
 	apply_safe_mode_path_blacklist();

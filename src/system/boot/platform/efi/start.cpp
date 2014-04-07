@@ -43,6 +43,9 @@ extern "C" int main(stage2_args *args);
 extern "C" void _start(void);
 
 
+uint32 sBootOptions;
+
+
 static void
 call_ctors(void)
 {
@@ -57,7 +60,7 @@ call_ctors(void)
 extern "C" uint32
 platform_boot_options(void)
 {
-	return 0;
+	return sBootOptions;
 }
 
 
@@ -106,6 +109,8 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systemTable)
 
   /* parse_multiboot_commandline - probably not */
   /* check for boot keys */
+    sBootOptions = check_for_boot_keys();
+    sBootOptions |= BOOT_OPTION_MENU;
 
   /* APM - skip entirely */
   /* ACPI - do we need to mmap/checksum it ? Or does EFI help with that.. Is it needed */
@@ -124,9 +129,5 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systemTable)
   /* Exit boot services - Only use runtime ( and maybe some system services) from here on.
    * See info on memory map and much more in docs. */
 
-  //launch kernel (main(&args);)
-	//main(&args);
-	dprintf(("hello world!\n"));
-	console_wait_for_key();
-	return EFI_SUCCESS;
+  	main(&args);
 }

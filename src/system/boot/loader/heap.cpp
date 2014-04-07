@@ -405,6 +405,8 @@ heap_init(stage2_args* args)
 	void* top;
 	if (platform_init_heap(args, &base, &top) < B_OK)
 		return B_ERROR;
+    
+    kprintf("platform_init_heap OK\n");
 
 	sHeapBase = base;
 	sHeapEnd = top;
@@ -413,17 +415,19 @@ heap_init(stage2_args* args)
 	// declare the whole heap as one chunk, and add it
 	// to the free list
 	FreeChunk* chunk = (FreeChunk*)base;
+    kprintf("set chunk to max heap size\n");
 	chunk->SetTo(sMaxHeapSize);
+    kprintf("insert chunk into free chunk tree\n");
 	sFreeChunkTree.Insert(chunk);
-
+    kprintf("available = %Lx\n", chunk->Size());
 	sAvailable = chunk->Size();
 #ifdef DEBUG_MAX_HEAP_USAGE
 	sMaxHeapUsage = sMaxHeapSize - sAvailable;
 #endif
-
+    kprintf("init large allocations\n");
 	if (sLargeAllocations.Init(64) != B_OK)
 		return B_NO_MEMORY;
-
+    kprintf("done!\n");
 	return B_OK;
 }
 
