@@ -73,7 +73,7 @@ platform_start_kernel(void)
 extern "C" void
 platform_exit(void)
 {
-    kSystemTable->RuntimeServices->ResetSystem(EfiResetCold, 0, 0, NULL);
+    kSystemTable->RuntimeServices->ResetSystem(EfiResetWarm, 0, 0, NULL);
 }
 
 
