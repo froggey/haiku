@@ -43,14 +43,11 @@ class EFIDrive : public Node {
 
 		status_t FillIdentifier();
 
-		bool HasParameters() const { return fHasParameters; }
-		const drive_parameters &Parameters() const { return fParameters; }
-
 		disk_identifier &Identifier() { return fIdentifier; }
 		uint8 DriveID() const { return fDriveID; }
 
 	protected:
-		EFI_BLOCK_IO	fBlockIO;
+		EFI_BLOCK_IO	*fBlockIO;
 		uint8		fDriveID;
 		uint64	fSize;
 		uint32	fBlockSize;
@@ -222,10 +219,10 @@ add_block_devices(NodeList *devicesList, bool identifierMissing)
 	size = 0;
 	handles = NULL;
 	
-	status = kSystemTable->BootServices->LocateHandle(EfiByProtocol, &sBlockIOGuid, 0, &size, 0);
+	status = kSystemTable->BootServices->LocateHandle(ByProtocol, &sBlockIOGuid, 0, &size, 0);
 	if (status == EFI_BUFFER_TOO_SMALL) {
 		handles = (EFI_HANDLE *)malloc(size);
-		status = kSystemTable->BootServices->LocateHandle(EfiByProtocol, &sBlockIOGuid, 0, &size, handles);
+		status = kSystemTable->BootServices->LocateHandle(ByProtocol, &sBlockIOGuid, 0, &size, handles);
 		if (status != EFI_SUCCESS)
 			free(handles);
 	}
@@ -235,7 +232,7 @@ add_block_devices(NodeList *devicesList, bool identifierMissing)
 	nIn = size / sizeof(EFI_HANDLE);
 	
 	for (unsigned int n = 0; n < nIn; n++) {
-		status = kSystemTable->BootServices->HandleProtocol(handles[n], &sDevicePathGuid, &devicePath);
+		status = kSystemTable->BootServices->HandleProtocol(handles[n], &sDevicePathGuid, (void**)&devicePath);
 		if (status != EFI_SUCCESS)
 			continue;
 		
@@ -244,7 +241,7 @@ add_block_devices(NodeList *devicesList, bool identifierMissing)
 		while (!IsDevicePathEnd(NextDevicePathNode(node)))
 			node = NextDevicePathNode(node);
 		
-		status = kSystemTable->BootServices->HandleProtocol(handles[n], &sBlockIOGuid, &blockIO);
+		status = kSystemTable->BootServices->HandleProtocol(handles[n], &sBlockIOGuid, (void**)&blockIO);
 		if (status != EFI_SUCCESS)
 			continue;
 		if (!blockIO->Media->LogicalPartition)
@@ -260,7 +257,7 @@ add_block_devices(NodeList *devicesList, bool identifierMissing)
 		if (DevicePathType(node) == MEDIA_DEVICE_PATH &&
 			DevicePathSubType(node) == MEDIA_CDROM_DP) {
 				node->Type = END_DEVICE_PATH_TYPE;
-				node->SubType = END_ENTIRE_DEVICE_PATH_SUBTREE;
+				node->SubType = END_ENTIRE_DEVICE_PATH_SUBTYPE;
 				status = kSystemTable->BootServices->LocateDevicePath(&sBlockIOGuid,
 					&devicePath, &handle);
 				// TODO: actually care about CD-ROMs
@@ -271,7 +268,6 @@ add_block_devices(NodeList *devicesList, bool identifierMissing)
 		// kprintf: blocks = blockIO->Media->LastBlock + 1; removable = blockIO->Media->RemovableMedia
 		EFIDrive *drive = new(nothrow) EFIDrive(blockIO);
 		if (drive->InitCheck() != B_OK) {
-			dprintf("could not add drive %u\n", driveID);
 			delete drive;
 			continue;
 		}
@@ -293,7 +289,7 @@ add_block_devices(NodeList *devicesList, bool identifierMissing)
 EFIDrive::EFIDrive(EFI_BLOCK_IO *blockIO)
 	:
 	fBlockIO(blockIO),
-	fDriveID(++fDriveIdentifier),
+	fDriveID(++sDriveIdentifier),
 	fSize(0)
 {
 	TRACE(("drive ID %u\n", fDriveID));
@@ -334,9 +330,9 @@ EFIDrive::ReadAt(void *cookie, off_t pos, void *buffer, size_t bufferSize)
 		/*if (blocksRead > scratchSize)
 			blocksRead = scratchSize;*/
 		
-		status = fBlockIO->ReadBlocks(fBlockIO,
+		EFI_STATUS status = fBlockIO->ReadBlocks(fBlockIO,
 				fBlockIO->Media->MediaId,
-				pos, blocksRead * fBlockIO->BlockSize, buffer);
+				pos, blocksRead * fBlockIO->Media->BlockSize, buffer);
 		/* ReadBlocks(EFI_BLOCK_IO*, EFI_MEDIA_ID,
 			START IN BLOCKS, SIZE IN BYTES?, OUTPUT BUFFER); */
 		

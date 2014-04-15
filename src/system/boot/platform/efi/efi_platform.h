@@ -10,6 +10,7 @@
 #include "efibind.h"
 #include "efidef.h"
 #include "efidevp.h"
+#include "efiprot.h"
 #include "eficon.h"
 #include "efierr.h"
 #include "efiapi.h"
