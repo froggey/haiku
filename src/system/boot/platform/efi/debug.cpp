@@ -121,17 +121,21 @@ void
 kprintf(const char *format, ...)
 {
 	va_list args;
+	va_list copy;
 
 	va_start(args, format);
+	va_copy(copy, args);
 
 	// print to console, if available
 	if (stdout != NULL)
 		vfprintf(stdout, format, args);
 
+	va_start(args, format);
 	// always print to serial line
 	dprintf_args(format, args);
 
 	va_end(args);
+	va_end(copy);
 }
 
 

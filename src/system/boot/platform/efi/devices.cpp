@@ -328,14 +328,21 @@ EFIDrive::ReadAt(void *cookie, off_t pos, void *buffer, size_t bufferSize)
 	uint32 offset = pos % fBlockSize;
 	pos /= fBlockSize;
 	
-	ASSERT(offset == 0);
+	if (offset > 0) {
+		kprintf("can't read unaligned blocks!\n");
+		return B_ERROR;
+	}
 
 	EFI_STATUS status = fBlockIO->ReadBlocks(fBlockIO,
 			fBlockIO->Media->MediaId,
 			pos, bufferSize, buffer);
 		
-	if (status != EFI_SUCCESS)
+	if (status != EFI_SUCCESS) {
+		kprintf("ReadBlocks EFI call failed!\n");
 		return B_ERROR;
+	}
+	
+	kprintf("read %d bytes from LBA %ld (bs: %d)\n", buffer_size, pos, fBlockSize);
 
 	return bufferSize;
 }
