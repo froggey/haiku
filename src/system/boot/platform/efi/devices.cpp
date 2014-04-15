@@ -27,10 +27,10 @@ static EFI_GUID sBlockIOGuid = BLOCK_IO_PROTOCOL;
 static EFI_GUID sDevicePathGuid = DEVICE_PATH_PROTOCOL;
 
 
-class EFIDrive : public Node {
+class EFIBlockDevice : public Node {
 	public:
-		EFIDrive(EFI_BLOCK_IO *blockIO);
-		virtual ~EFIDrive();
+		EFIBlockDevice(EFI_BLOCK_IO *blockIO);
+		virtual ~EFIBlockDevice();
 
 		status_t InitCheck() const;
 
@@ -45,7 +45,7 @@ class EFIDrive : public Node {
 
 		disk_identifier &Identifier() { return fIdentifier; }
 		uint8 DriveID() const { return fDriveID; }
-
+		
 	protected:
 		EFI_BLOCK_IO	*fBlockIO;
 		uint8		fDriveID;
@@ -82,7 +82,7 @@ get_next_check_sum_offset(int32 index, off_t maxSize)
  */
 
 static uint32
-compute_check_sum(EFIDrive *drive, off_t offset)
+compute_check_sum(EFIBlockDevice *drive, off_t offset)
 {
 	char buffer[512];
 	ssize_t bytesRead = drive->ReadAt(NULL, offset, buffer, sizeof(buffer));
@@ -118,7 +118,7 @@ find_unique_check_sums(NodeList *devices)
 		iterator.Rewind();
 
 		while ((device = iterator.Next()) != NULL) {
-			EFIDrive *drive = (EFIDrive *)device;
+			EFIBlockDevice *drive = (EFIBlockDevice *)device;
 #if 0
 			// there is no RTTI in the boot loader...
 			BIOSDrive *drive = dynamic_cast<BIOSDrive *>(device);
@@ -138,7 +138,7 @@ find_unique_check_sums(NodeList *devices)
 
 			NodeIterator compareIterator = devices->GetIterator();
 			while ((device = compareIterator.Next()) != NULL) {
-				EFIDrive *compareDrive = (EFIDrive *)device;
+				EFIBlockDevice *compareDrive = (EFIBlockDevice *)device;
 
 				if (compareDrive == drive
 					|| compareDrive->Identifier().device_type != UNKNOWN_DEVICE)
@@ -180,7 +180,7 @@ find_unique_check_sums(NodeList *devices)
 		iterator.Rewind();
 
 		while ((device = iterator.Next()) != NULL) {
-			EFIDrive *drive = (EFIDrive *)device;
+			EFIBlockDevice *drive = (EFIBlockDevice *)device;
 
 			disk_identifier& disk = drive->Identifier();
 			disk.device.unknown.check_sums[i].offset = offset;
@@ -270,7 +270,7 @@ add_block_devices(NodeList *devicesList, bool identifierMissing)
 		
 		// Use handles[n] to create an EFIDisk given the current Block IO handle
 		// kprintf: blocks = blockIO->Media->LastBlock + 1; removable = blockIO->Media->RemovableMedia
-		EFIDrive *drive = new(nothrow) EFIDrive(blockIO);
+		EFIBlockDevice *drive = new(nothrow) EFIBlockDevice(blockIO);
 		if (drive->InitCheck() != B_OK) {
 			delete drive;
 			continue;
@@ -290,7 +290,7 @@ add_block_devices(NodeList *devicesList, bool identifierMissing)
 //	#pragma mark -
 
 
-EFIDrive::EFIDrive(EFI_BLOCK_IO *blockIO)
+EFIBlockDevice::EFIBlockDevice(EFI_BLOCK_IO *blockIO)
 	:
 	fBlockIO(blockIO),
 	fDriveID(++sDriveIdentifier),
@@ -308,48 +308,45 @@ EFIDrive::EFIDrive(EFI_BLOCK_IO *blockIO)
 }
 
 
-EFIDrive::~EFIDrive()
+EFIBlockDevice::~EFIBlockDevice()
 {
 }
 
 
 status_t
-EFIDrive::InitCheck() const
+EFIBlockDevice::InitCheck() const
 {
 	return fSize > 0 ? B_OK : B_ERROR;
 }
+
 
 /*
  * pos is in bytes, bufferSize is also in bytes
  */
 ssize_t
-EFIDrive::ReadAt(void *cookie, off_t pos, void *buffer, size_t bufferSize)
+EFIBlockDevice::ReadAt(void *cookie, off_t pos, void *buffer, size_t bufferSize)
 {
 	uint32 offset = pos % fBlockSize;
 	pos /= fBlockSize;
 	
-	if (offset > 0) {
-		kprintf("can't read unaligned blocks!\n");
-		return B_ERROR;
-	}
-
-	EFI_STATUS status = fBlockIO->ReadBlocks(fBlockIO,
-			fBlockIO->Media->MediaId,
-			pos, bufferSize, buffer);
-		
-	if (status != EFI_SUCCESS) {
-		kprintf("ReadBlocks EFI call failed!\n");
-		return B_ERROR;
-	}
+	uint32 numBlocks = (offset + bufferSize + fBlockSize) / fBlockSize;
 	
-	kprintf("read %d bytes from LBA %ld (bs: %d)\n", bufferSize, pos, fBlockSize);
+	char readBuffer[fBlockSize * numBlocks];
+	
+	EFI_STATUS status = fBlockIO->ReadBlocks(fBlockIO, fBlockIO->Media->MediaId,
+			pos, sizeof(readBuffer), readBuffer);
+	
+	if (status != EFI_SUCCESS)
+		return B_ERROR;
+	
+	memcpy(buffer, readBuffer + offset, bufferSize);
 
 	return bufferSize;
 }
 
 
 ssize_t
-EFIDrive::WriteAt(void* cookie, off_t pos, const void* buffer,
+EFIBlockDevice::WriteAt(void* cookie, off_t pos, const void* buffer,
 	size_t bufferSize)
 {
 	return B_UNSUPPORTED;
@@ -357,14 +354,14 @@ EFIDrive::WriteAt(void* cookie, off_t pos, const void* buffer,
 
 
 off_t
-EFIDrive::Size() const
+EFIBlockDevice::Size() const
 {
 	return fSize;
 }
 
 
 status_t
-EFIDrive::FillIdentifier()
+EFIBlockDevice::FillIdentifier()
 {
 	fIdentifier.bus_type = UNKNOWN_BUS;
 	fIdentifier.device_type = UNKNOWN_DEVICE;
@@ -407,7 +404,7 @@ platform_add_block_devices(stage2_args *args, NodeList *devicesList)
 status_t
 platform_register_boot_device(Node *device)
 {
-	EFIDrive *drive = (EFIDrive *)device;
+	EFIBlockDevice *drive = (EFIBlockDevice *)device;
 
 	gBootVolume.SetInt64("boot drive number", drive->DriveID());
 	gBootVolume.SetData(BOOT_VOLUME_DISK_IDENTIFIER, B_RAW_TYPE,
