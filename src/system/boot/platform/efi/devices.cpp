@@ -342,7 +342,7 @@ EFIDrive::ReadAt(void *cookie, off_t pos, void *buffer, size_t bufferSize)
 		return B_ERROR;
 	}
 	
-	kprintf("read %d bytes from LBA %ld (bs: %d)\n", buffer_size, pos, fBlockSize);
+	kprintf("read %d bytes from LBA %ld (bs: %d)\n", bufferSize, pos, fBlockSize);
 
 	return bufferSize;
 }
