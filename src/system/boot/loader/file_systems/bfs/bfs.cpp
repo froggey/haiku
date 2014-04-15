@@ -18,9 +18,9 @@
 #include "Utility.h"
 
 
-#define TRACE_BFS 0
+#define TRACE_BFS 1
 #if TRACE_BFS
-#	define TRACE(x) printf x
+#	define TRACE(x) kprintf x
 #else
 #	define TRACE(x) ;
 #endif

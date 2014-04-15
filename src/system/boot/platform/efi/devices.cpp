@@ -14,9 +14,9 @@
 
 #include <string.h>
 
-//#define TRACE_DEVICES
+#define TRACE_DEVICES
 #ifdef TRACE_DEVICES
-#	define TRACE(x) dprintf x
+#	define TRACE(x) kprintf x
 #else
 #	define TRACE(x) ;
 #endif
@@ -197,7 +197,7 @@ find_unique_check_sums(NodeList *devices)
 	// It's very likely that one disk is an exact copy of the other, so there is nothing
 	// we could do, anyway.
 
-	dprintf("Could not make EFI drives unique! Might boot from the wrong disk...\n");
+	kprintf("Could not make EFI drives unique! Might boot from the wrong disk...\n");
 }
 
 
@@ -226,10 +226,14 @@ add_block_devices(NodeList *devicesList, bool identifierMissing)
 		if (status != EFI_SUCCESS)
 			free(handles);
 	}
-	if (status != EFI_SUCCESS)
+	if (status != EFI_SUCCESS) {
+		kprintf("failed to locate any block io handles\n");
 		return B_ERROR;
+	}
 	
 	nIn = size / sizeof(EFI_HANDLE);
+	
+	kprintf("found %d block devices\n", nIn);
 	
 	for (unsigned int n = 0; n < nIn; n++) {
 		status = kSystemTable->BootServices->HandleProtocol(handles[n], &sDevicePathGuid, (void**)&devicePath);
@@ -299,6 +303,8 @@ EFIDrive::EFIDrive(EFI_BLOCK_IO *blockIO)
 	
 	fBlockSize = fBlockIO->Media->BlockSize;
 	fSize = (fBlockIO->Media->LastBlock + 1) * fBlockSize;
+	
+	TRACE(("blocksize: %d, size: %ld\n", fBlockSize, fSize));
 }
 
 
@@ -321,36 +327,17 @@ EFIDrive::ReadAt(void *cookie, off_t pos, void *buffer, size_t bufferSize)
 {
 	uint32 offset = pos % fBlockSize;
 	pos /= fBlockSize;
+	
+	ASSERT(offset == 0);
 
-	uint32 blocksLeft = (bufferSize + offset + fBlockSize - 1) / fBlockSize;
-	int32 totalBytesRead = 0;
-
-	while (blocksLeft > 0) {
-		uint32 blocksRead = blocksLeft;
-		/*if (blocksRead > scratchSize)
-			blocksRead = scratchSize;*/
+	EFI_STATUS status = fBlockIO->ReadBlocks(fBlockIO,
+			fBlockIO->Media->MediaId,
+			pos, bufferSize, buffer);
 		
-		EFI_STATUS status = fBlockIO->ReadBlocks(fBlockIO,
-				fBlockIO->Media->MediaId,
-				pos, blocksRead * fBlockIO->Media->BlockSize, buffer);
-		/* ReadBlocks(EFI_BLOCK_IO*, EFI_MEDIA_ID,
-			START IN BLOCKS, SIZE IN BYTES?, OUTPUT BUFFER); */
-		
-		uint32 bytesRead = fBlockSize * blocksRead - offset;
-		// copy no more than bufferSize bytes
-		if (bytesRead > bufferSize)
-			bytesRead = bufferSize;
+	if (status != EFI_SUCCESS)
+		return B_ERROR;
 
-		//memcpy(buffer, (void *)(kExtraSegmentScratch + offset), bytesRead);
-		pos += blocksRead;
-		offset = 0;
-		blocksLeft -= blocksRead;
-		bufferSize -= bytesRead;
-		buffer = (void *)((addr_t)buffer + bytesRead);
-		totalBytesRead += bytesRead;
-	}
-
-	return totalBytesRead;
+	return bufferSize;
 }
 
 

@@ -1172,12 +1172,10 @@ add_safe_mode_menu()
 
 	safeMenu->AddSeparatorItem();
 	sBlacklistRootMenu = new(std::nothrow) BlacklistRootMenu;
-#if 0
 	safeMenu->AddItem(item = new(std::nothrow) MenuItem("Blacklist entries",
 		sBlacklistRootMenu));
 	item->SetHelpText("Allows to select system files that shall be ignored. "
 		"Useful e.g. to disable drivers temporarily.");
-#endif
 	safeMenu->AddSeparatorItem();
 	safeMenu->AddItem(item = new(nothrow) MenuItem("Return to main menu"));
 
@@ -1291,7 +1289,6 @@ add_debug_menu()
 	item->SetType(MENU_ITEM_MARKABLE);
 	item->SetHelpText("Disables paging when on screen debug output is "
 		"enabled.");
-#if 0
 	menu->AddItem(item = new(nothrow) MenuItem("Enable debug syslog"));
 	item->SetType(MENU_ITEM_MARKABLE);
 	item->SetMarked(gKernelArgs.keep_debug_output_buffer);
@@ -1340,7 +1337,6 @@ add_debug_menu()
 		item->SetHelpText("Saves the syslog from the previous Haiku session to "
 			"disk. Currently only FAT32 volumes are supported.");
 	}
-#endif
 	menu->AddSeparatorItem();
 	menu->AddItem(item = new(nothrow) MenuItem(
 		"Add advanced debug option"));
@@ -1425,8 +1421,8 @@ user_menu(BootVolume& _bootVolume, PathBlacklist& _pathBlacklist)
 	TRACE(("user_menu: enter\n"));
 
 	// Add boot volume
-	//menu->AddItem(item = new(std::nothrow) MenuItem("Select boot volume",
-	//	add_boot_volume_menu(_bootVolume.RootDirectory())));
+	menu->AddItem(item = new(std::nothrow) MenuItem("Select boot volume",
+		add_boot_volume_menu(_bootVolume.RootDirectory())));
     TRACE(("make new item\n"));
     item = new(std::nothrow) MenuItem("Select safe mode options",
                                       safeModeMenu = add_safe_mode_menu());

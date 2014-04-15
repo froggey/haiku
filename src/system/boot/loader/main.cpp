@@ -50,9 +50,10 @@ main(stage2_args *args)
 	// the main platform dependent initialisation
 	// has already taken place at this point.
 
+#endif
 	if (vfs_init(args) < B_OK)
 		panic("Could not initialize VFS!\n");
-#endif
+
 	kprintf("Welcome to the Haiku boot loader!\n");
 
 	bool mountedAllVolumes = false;
@@ -60,9 +61,7 @@ main(stage2_args *args)
 	BootVolume bootVolume;
 	PathBlacklist pathBlacklist;
     
-    user_menu(bootVolume, pathBlacklist);
-
-	if (get_boot_file_system(args, bootVolume) != B_OK
+    if (get_boot_file_system(args, bootVolume) != B_OK
 		|| (platform_boot_options() & BOOT_OPTION_MENU) != 0) {
 		if (!bootVolume.IsValid())
 			puts("\tno boot path found, scan for all partitions...\n");

@@ -662,7 +662,6 @@ mount_file_systems(stage2_args *args)
 	if (gPartitions.IsEmpty())
 		return B_ENTRY_NOT_FOUND;
 
-#if 0
 	void *cookie;
 	if (gRoot->Open(&cookie, O_RDONLY) == B_OK) {
 		Directory *directory;
@@ -681,7 +680,6 @@ mount_file_systems(stage2_args *args)
 		}
 		gRoot->Close(cookie);
 	}
-#endif
 
 	return B_OK;
 }

@@ -24,7 +24,7 @@ using namespace boot;
 
 #define TRACE_PARTITIONS
 #ifdef TRACE_PARTITIONS
-#	define TRACE(x) dprintf x
+#	define TRACE(x) kprintf x
 #else
 #	define TRACE(x) ;
 #endif
@@ -329,6 +329,7 @@ Partition::Scan(bool mountFileSystems, bool isBootDevice)
 	void *bestCookie = NULL;
 	float bestPriority = -1;
 
+	TRACE(("scanning %d partition modules...\n", sNumPartitionModules));
 	for (int32 i = 0; i < sNumPartitionModules; i++) {
 		const partition_module_info *module = sPartitionModules[i];
 		void *cookie = NULL;
@@ -357,9 +358,14 @@ Partition::Scan(bool mountFileSystems, bool isBootDevice)
 		bestPriority = priority;
 	}
 
-	// find the best FS module
 	const file_system_module_info *bestFSModule = NULL;
 	float bestFSPriority = -1;
+	
+	// find the best FS module
+	if (bestModule == NULL)
+		goto rawFilesystem;
+	
+	TRACE(("looking for best FS module out of %d modules\n", sNumFileSystemModules));
 	for (int32 i = 0; i < sNumFileSystemModules; i++) {
 		if (sFileSystemModules[i]->identify_file_system == NULL)
 			continue;
@@ -398,6 +404,7 @@ Partition::Scan(bool mountFileSystems, bool isBootDevice)
 		NodeIterator iterator = fChildren.GetIterator();
 		Partition *child = NULL;
 
+		TRACE(("looking for child partitions...\n"));
 		while ((child = (Partition *)iterator.Next()) != NULL) {
 			TRACE(("%p Partition::Scan(): scan child %p (start = %Ld, size "
 				"= %Ld, parent = %p)!\n", this, child, child->offset,
@@ -426,13 +433,17 @@ Partition::Scan(bool mountFileSystems, bool isBootDevice)
 		return B_OK;
 	}
 
+rawFilesystem:
 	// scan for file systems
 
+	TRACE(("looking for file systems...\n"));
 	if (mountFileSystems) {
 		// TODO: Use the FS module we've got, if any. Requires to implement the
 		// identify_file_system() hook in every FS.
 		return Mount();
 	}
+	
+	TRACE(("no partitions/filesystems found...\n"));
 
 	return B_ENTRY_NOT_FOUND;
 }
