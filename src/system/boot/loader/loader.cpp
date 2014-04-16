@@ -61,8 +61,10 @@ open_maybe_packaged(BootVolume& volume, const char* path, int openMode)
 	if (strncmp(path, kSystemDirectoryPrefix, strlen(kSystemDirectoryPrefix))
 			== 0) {
 		path += strlen(kSystemDirectoryPrefix);
+				kprintf("open from system directory with path %s\n", path);
 		return open_from(volume.SystemDirectory(), path, openMode);
 	}
+	kprintf("open from root directory with path %s\n", path);
 
 	return open_from(volume.RootDirectory(), path, openMode);
 }
@@ -72,6 +74,7 @@ static int
 find_kernel(BootVolume& volume, const char** name = NULL)
 {
 	for (int32 i = 0; sKernelPaths[i][0] != NULL; i++) {
+		kprintf("maybe packaged at %s\n", sKernelPaths[i][0]);
 		int fd = open_maybe_packaged(volume, sKernelPaths[i][0], O_RDONLY);
 		if (fd >= 0) {
 			if (name)
@@ -88,14 +91,21 @@ find_kernel(BootVolume& volume, const char** name = NULL)
 bool
 is_bootable(Directory *volume)
 {
-	if (volume->IsEmpty())
+	kprintf("check if empty...\n");
+	if (volume->IsEmpty()) {
+		kprintf("is empty\n");
 		return false;
+	}
 
+	kprintf("set to boot volume...\n");
 	BootVolume bootVolume;
-	if (bootVolume.SetTo(volume) != B_OK)
+	if (bootVolume.SetTo(volume) != B_OK) {
+		kprintf("can't make it a boot volume\n");
 		return false;
+	}
 
 	// check for the existance of a kernel (for our platform)
+	kprintf("looking for a kernel...\n");
 	int fd = find_kernel(bootVolume);
 	if (fd < 0)
 		return false;

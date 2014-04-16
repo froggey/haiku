@@ -834,44 +834,62 @@ status_t
 packagefs_mount_file(int fd, ::Directory* systemDirectory,
 	::Directory*& _mountedDirectory)
 {
+	kprintf("create the error output\n");
 	PackageLoaderErrorOutput errorOutput;
+	kprintf("create the package reader\n");
  	PackageReaderImpl packageReader(&errorOutput);
+	kprintf("check init\n");
 	status_t error = packageReader.Init(fd, false, 0);
- 	if (error != B_OK)
+ 	if (error != B_OK) {
+		kprintf("failed\n");
  		RETURN_ERROR(error);
+	}
 
 	// create the volume
+	kprintf("create the volume\n");
 	PackageVolume* volume = new(std::nothrow) PackageVolume;
 	if (volume == NULL)
 		return B_NO_MEMORY;
 	BReference<PackageVolume> volumeReference(volume, true);
 
 	error = volume->Init(fd, packageReader.RawHeapReader());
-	if (error != B_OK)
+	if (error != B_OK) {
+		kprintf("init failed\n");
 		RETURN_ERROR(error);
+	}
 
 	// load settings for the package
+	kprintf("load settings for package\n");
 	PackageSettingsItem* settings = PackageSettingsItem::Load(systemDirectory,
 		"haiku");
 	ObjectDeleter<PackageSettingsItem> settingsDeleter(settings);
 
 	// parse content -- this constructs the entry/node tree
+	kprintf("parse content\n");
 	PackageLoaderContentHandler handler(volume, settings);
 	error = handler.Init();
-	if (error != B_OK)
+	if (error != B_OK) {
+		kprintf("init failed\n");
 		RETURN_ERROR(error);
+	}
 
 	error = packageReader.ParseContent(&handler);
-	if (error != B_OK)
+	if (error != B_OK) {
+		kprintf("parsing failed\n");
 		RETURN_ERROR(error);
+	}
 
 	// create a VFS node for the root node
+	kprintf("create vfs node for root\n");
 	::Node* rootNode;
 	error = create_node(volume->RootDirectory(), rootNode);
-	if (error != B_OK)
+	if (error != B_OK) {
+		kprintf("failed\n");
 		RETURN_ERROR(error);
+	}
 
 	_mountedDirectory = static_cast< ::Directory*>(rootNode);
+	kprintf("success\n");
 	return B_OK;
 }
 

@@ -89,20 +89,25 @@ void
 panic(const char *format, ...)
 {
 	va_list list;
+	
+	//platform_switch_to_text_mode();
 
-	platform_switch_to_text_mode();
-
-	puts("*** PANIC ***");
+	//puts("*** PANIC ***");
 
 	va_start(list, format);
-	vprintf(format, list);
+	// print to console, if available
+	if (stdout != NULL)
+		vfprintf(stdout, format, list);
+	else
+		vprintf(format, list);
 	va_end(list);
 
-	puts("\nPress key to reboot.");
+	//puts("\nPress key to reboot.");
 
 	clear_key_buffer();
 	wait_for_key();
-	platform_exit();
+	//platform_exit();
+	while (true) { };
 }
 
 

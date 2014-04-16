@@ -1055,9 +1055,10 @@ ReaderImplBase::_Init(int fd, bool keepFD)
 	fOwnsFD = keepFD;
 
 	// allocate a scratch buffer
+	printf("allocating scratch buffer of size %ld\n", kScratchBufferSize);
 	fScratchBuffer = new(std::nothrow) uint8[kScratchBufferSize];
 	if (fScratchBuffer == NULL) {
-		fErrorOutput->PrintError("Error: Out of memory!\n");
+		printf("ReaderImplBase::_Init: Out of memory!\n");
 		return B_NO_MEMORY;
 	}
 	fScratchBufferSize = kScratchBufferSize;

@@ -424,38 +424,51 @@ BootVolume::SetTo(Directory* rootDirectory)
 		return B_BAD_VALUE;
 
 	fRootDirectory = rootDirectory;
+	kprintf("acquire root directory\n");
 	fRootDirectory->Acquire();
 
 	// find the system directory
+	kprintf("lookup system node\n");
 	Node* systemNode = fRootDirectory->Lookup("system", true);
 	if (systemNode == NULL || !S_ISDIR(systemNode->Type())) {
 		if (systemNode != NULL)
 			systemNode->Release();
 		Unset();
+		kprintf("system node null or not a directory (%s)\n", systemNode == NULL ? "null" : "not dir");
 		return B_ENTRY_NOT_FOUND;
 	}
 
+	kprintf("cast to Directory\n");
 	fSystemDirectory = static_cast<Directory*>(systemNode);
 
 	// try opening the system package
+	kprintf("open system package\n");
 	int packageFD = _OpenSystemPackage();
 	fPackaged = packageFD >= 0;
-	if (!fPackaged)
+	if (!fPackaged) {
+		kprintf("not a packaged system\n");
 		return B_OK;
+	}
 
 	// the system is packaged -- mount the packagefs
 	Directory* packageRootDirectory;
+	kprintf("mounting packagefs\n");
 	status_t error = packagefs_mount_file(packageFD, fSystemDirectory,
 		packageRootDirectory);
+	kprintf("releasing file descriptor\n");
 	close(packageFD);
 	if (error != B_OK) {
 		Unset();
+		kprintf("mounting failed\n");
 		return error;
 	}
 
+	kprintf("releasing system directory\n");
 	fSystemDirectory->Release();
+	kprintf("system directory is now package root\n");
 	fSystemDirectory = packageRootDirectory;
 
+	kprintf("done!\n");
 	return B_OK;
 }
 

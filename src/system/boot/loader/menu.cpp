@@ -1063,6 +1063,7 @@ debug_menu_save_previous_syslog(Menu* menu, MenuItem* item)
 static Menu*
 add_boot_volume_menu(Directory* bootVolume)
 {
+	TRACE(("add boot volume menu...\n"));
 	Menu* menu = new(std::nothrow) Menu(CHOICE_MENU, "Select Boot Volume");
 	MenuItem* item;
 	void* cookie;
@@ -1072,11 +1073,17 @@ add_boot_volume_menu(Directory* bootVolume)
 		Directory* volume;
 		while (gRoot->GetNextNode(cookie, (Node**)&volume) == B_OK) {
 			// only list bootable volumes
-			if (volume != bootVolume && !is_bootable(volume))
+			TRACE(("next volume... (%p)\n", volume));
+			if (volume != bootVolume && !is_bootable(volume)) {
+				TRACE(("not boot volume and not bootable\n"));
 				continue;
+			} else {
+				TRACE(("getting the name, and trying to add...\n"));
+			}
 
 			char name[B_FILE_NAME_LENGTH];
 			if (volume->GetName(name, sizeof(name)) == B_OK) {
+				TRACE(("adding %s\n", name));
 				menu->AddItem(item = new(nothrow) MenuItem(name));
 				item->SetTarget(user_menu_boot_volume);
 				item->SetData(volume);

@@ -335,38 +335,62 @@ status_t
 PackageReaderImpl::Init(int fd, bool keepFD, uint32 flags)
 {
 	hpkg_header header;
+	printf("::Init (printf)\n");
+	ErrorOutput()->PrintError("::Init (error-output)\n");
+	printf(".. ");
 	status_t error = inherited::Init<hpkg_header, B_HPKG_MAGIC, B_HPKG_VERSION,
 		B_HPKG_MINOR_VERSION>(fd, keepFD, header, flags);
-	if (error != B_OK)
+	printf(".. ");
+	if (error != B_OK) {
+		printf("!!\n");	
 		return error;
+	}
+	printf(".. ");
 	fHeapSize = UncompressedHeapSize();
 
 	// init package attributes section
+	printf(".. ");
 	error = InitSection(fPackageAttributesSection, fHeapSize,
 		B_BENDIAN_TO_HOST_INT32(header.attributes_length),
 		kMaxPackageAttributesSize,
 		B_BENDIAN_TO_HOST_INT32(header.attributes_strings_length),
 		B_BENDIAN_TO_HOST_INT32(header.attributes_strings_count));
-	if (error != B_OK)
+	printf(".. ");
+	if (error != B_OK) {
+		printf("!!\n");	
 		return error;
-
+	}
+	
 	// init TOC section
+	printf(".. ");
 	error = InitSection(fTOCSection, fPackageAttributesSection.offset,
 		B_BENDIAN_TO_HOST_INT64(header.toc_length), kMaxTOCSize,
 		B_BENDIAN_TO_HOST_INT64(header.toc_strings_length),
 		B_BENDIAN_TO_HOST_INT64(header.toc_strings_count));
-	if (error != B_OK)
+	printf(".. ");
+	if (error != B_OK) {
+		printf("!!\n");	
 		return error;
-
+	}
+	
 	// prepare the sections for use
+	printf(".. ");
 	error = PrepareSection(fTOCSection);
-	if (error != B_OK)
+	printf(".. ");
+	if (error != B_OK) {
+		printf("!!\n");	
 		return error;
-
+	}
+	
+	printf(".. ");
 	error = PrepareSection(fPackageAttributesSection);
-	if (error != B_OK)
+	printf(".. ");
+	if (error != B_OK) {
+		printf("!!\n");	
 		return error;
-
+	}
+	
+	printf(":-)\n");
 	return B_OK;
 }
 

@@ -424,20 +424,46 @@ private:
 
 
 // #pragma mark - template and inline methods
-
+inline uint16 swap16(uint16 val)
+    {
+        return ((((val) >> 8) & 0xff) | (((val) & 0xff) << 8));
+    }
+inline uint32 swap32(uint32 val)
+    {
+        return ((((val) & 0xff000000) >> 24) |
+                (((val) & 0x00ff0000) >>  8) |
+                (((val) & 0x0000ff00) <<  8) |
+                (((val) & 0x000000ff) << 24));
+    }
+inline uint64 swap64(uint64 val)
+    {
+        return ((((val) & 0xff00000000000000ull) >> 56) |
+                (((val) & 0x00ff000000000000ull) >> 40) |
+                (((val) & 0x0000ff0000000000ull) >> 24) |
+                (((val) & 0x000000ff00000000ull) >> 8 ) |
+                (((val) & 0x00000000ff000000ull) << 8 ) |
+                (((val) & 0x0000000000ff0000ull) << 24) |
+                (((val) & 0x000000000000ff00ull) << 40) |
+                (((val) & 0x00000000000000ffull) << 56));
+    }
 
 template<typename Header, uint32 kMagic, uint16 kVersion, uint16 kMinorVersion>
 status_t
 ReaderImplBase::Init(int fd, bool keepFD, Header& header, uint32 flags)
 {
+	printf("_Init\n");
 	status_t error = _Init(fd, keepFD);
-	if (error != B_OK)
+	printf("go? ");
+	if (error != B_OK) {
+		printf("no\n");
 		return error;
+	}
+	printf("yes\n");
 
 	// stat the file
 	struct stat st;
-	if (fstat(FD(), &st) < 0) {
-		ErrorOutput()->PrintError("Error: Failed to access %s file: %s\n",
+	if (fstat(FD(), &st) < 0) {		
+		printf("Error: Failed to access %s file: %s\n",
 			fFileType, strerror(errno));
 		return errno;
 	}
@@ -449,37 +475,39 @@ ReaderImplBase::Init(int fd, bool keepFD, Header& header, uint32 flags)
 	// check the header
 
 	// magic
-	if (B_BENDIAN_TO_HOST_INT32(header.magic) != kMagic) {
-		ErrorOutput()->PrintError("Error: Invalid %s file: Invalid "
+	if (swap32(header.magic) != kMagic) {
+		printf("Error: Invalid %s file: Invalid "
 			"magic\n", fFileType);
+		printf("kMagic = %x; header.magic = %x; header.magic (bendian) = %x\n",
+			kMagic, header.magic, swap32(header.magic));
 		return B_BAD_DATA;
 	}
 
 	// version
-	if (B_BENDIAN_TO_HOST_INT16(header.version) != kVersion) {
+	if (swap16(header.version) != kVersion) {
 		if ((flags & B_HPKG_READER_DONT_PRINT_VERSION_MISMATCH_MESSAGE) == 0) {
-			ErrorOutput()->PrintError("Error: Invalid/unsupported %s file "
+			printf("Error: Invalid/unsupported %s file "
 				"version (%d)\n", fFileType,
-				B_BENDIAN_TO_HOST_INT16(header.version));
+				swap16(header.version));
 		}
 		return B_MISMATCHED_VALUES;
 	}
 
-	fMinorFormatVersion = B_BENDIAN_TO_HOST_INT16(header.minor_version);
+	fMinorFormatVersion = swap16(header.minor_version);
 	fCurrentMinorFormatVersion = kMinorVersion;
 
 	// header size
-	uint64 heapOffset = B_BENDIAN_TO_HOST_INT16(header.header_size);
+	uint64 heapOffset = swap16(header.header_size);
 	if (heapOffset < (off_t)sizeof(header)) {
-		ErrorOutput()->PrintError("Error: Invalid %s file: Invalid header "
+		printf("Error: Invalid %s file: Invalid header "
 			"size (%" B_PRIu64 ")\n", fFileType, heapOffset);
 		return B_BAD_DATA;
 	}
 
 	// total size
-	uint64 totalSize = B_BENDIAN_TO_HOST_INT64(header.total_size);
+	uint64 totalSize = swap64(header.total_size);
 	if (totalSize != (uint64)st.st_size) {
-		ErrorOutput()->PrintError("Error: Invalid %s file: Total size in "
+		printf("Error: Invalid %s file: Total size in "
 			"header (%" B_PRIu64 ") doesn't agree with total file size (%"
 			B_PRIdOFF ")\n", fFileType, totalSize, st.st_size);
 		return B_BAD_DATA;
@@ -487,10 +515,10 @@ ReaderImplBase::Init(int fd, bool keepFD, Header& header, uint32 flags)
 
 	// heap size
 	uint64 compressedHeapSize
-		= B_BENDIAN_TO_HOST_INT64(header.heap_size_compressed);
+		= swap64(header.heap_size_compressed);
 	if (compressedHeapSize > totalSize
 		|| heapOffset > totalSize - compressedHeapSize) {
-		ErrorOutput()->PrintError("Error: Invalid %s file: Heap size in "
+		printf("Error: Invalid %s file: Heap size in "
 			"header (%" B_PRIu64 ") doesn't agree with total file size (%"
 			B_PRIu64 ") and heap offset (%" B_PRIu64 ")\n", fFileType,
 			compressedHeapSize, totalSize, heapOffset);
@@ -498,10 +526,10 @@ ReaderImplBase::Init(int fd, bool keepFD, Header& header, uint32 flags)
 	}
 
 	error = InitHeapReader(
-		B_BENDIAN_TO_HOST_INT16(header.heap_compression),
-		B_BENDIAN_TO_HOST_INT32(header.heap_chunk_size), heapOffset,
+		swap16(header.heap_compression),
+		swap32(header.heap_chunk_size), heapOffset,
 		compressedHeapSize,
-		B_BENDIAN_TO_HOST_INT64(header.heap_size_uncompressed));
+		swap64(header.heap_size_uncompressed));
 	if (error != B_OK)
 		return error;
 

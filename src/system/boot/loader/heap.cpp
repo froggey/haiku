@@ -21,7 +21,7 @@
 
 //#define TRACE_HEAP
 #ifdef TRACE_HEAP
-#	define TRACE(format...)	dprintf(format)
+#	define TRACE(format...)	kprintf(format)
 #else
 #	define TRACE(format...)	do { } while (false)
 #endif
@@ -262,12 +262,12 @@ malloc_large(size_t size)
 {
 	LargeAllocation* allocation = new(std::nothrow) LargeAllocation;
 	if (allocation == NULL) {
-		dprintf("malloc_large(): Out of memory!\n");
+		kprintf("malloc_large(): Out of memory!\n");
 		return NULL;
 	}
 
 	if (allocation->Allocate(size) != B_OK) {
-		dprintf("malloc_large(): Out of memory!\n");
+		kprintf("malloc_large(): Out of memory!\n");
 		delete allocation;
 		return NULL;
 	}
@@ -392,7 +392,7 @@ void
 heap_print_statistics()
 {
 #ifdef DEBUG_MAX_HEAP_USAGE
-	dprintf("maximum boot loader heap usage: %zu, currently used: %zu\n",
+	kprintf("maximum boot loader heap usage: %zu, currently used: %zu\n",
 		sMaxHeapUsage, sMaxHeapSize - sAvailable);
 #endif
 }
@@ -464,11 +464,13 @@ malloc(size_t size)
 		size = sizeof(FreeChunkData);
 	size = align(size);
 
-	if (size >= kLargeAllocationThreshold)
+	if (size >= kLargeAllocationThreshold) {
+		kprintf("using large allocator\n");
 		return malloc_large(size);
+	}
 
 	if (size > sAvailable) {
-		dprintf("malloc(): Out of memory!\n");
+		kprintf("malloc(): Out of memory!\n");
 		return NULL;
 	}
 
@@ -477,7 +479,7 @@ malloc(size_t size)
 
 	if (chunk == NULL) {
 		// could not find a free chunk as large as needed
-		dprintf("malloc(): Out of memory!\n");
+		kprintf("malloc(): Out of memory!\n");
 		return NULL;
 	}
 

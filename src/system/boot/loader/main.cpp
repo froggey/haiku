@@ -53,6 +53,10 @@ main(stage2_args *args)
 #endif
 	if (vfs_init(args) < B_OK)
 		panic("Could not initialize VFS!\n");
+	
+	// the following fails?!
+	//uint8 *test = new(std::nothrow) uint8[65536];
+	uint8 *test = (uint8*)malloc(sizeof(uint8) * 65536);
 
 	kprintf("Welcome to the Haiku boot loader!\n");
 
