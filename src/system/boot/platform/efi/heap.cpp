@@ -34,7 +34,7 @@ platform_init_heap(struct stage2_args *args, void **_base, void **_top)
 			!= EFI_SUCCESS) && (heap_size >= STAGE_PAGES)) {
 				heap_size /= 2;
 			}
-    kprintf("heap address = %lx\n", staging);
+    kprintf("heap address = %lx, size = %d pages\n", staging, heap_size);
     if (staging == 0l)
         return B_NO_MEMORY;
     
@@ -64,9 +64,7 @@ platform_allocate_region(void **_address, size_t size, uint8 protection, bool /*
 extern "C" status_t
 platform_free_region(void *address, size_t /* size */)
 {
-	/*EFI_STATUS status;
-	
-	status = kSystemTable->BootServices->FreePool(address);*/
+	kSystemTable->BootServices->FreePool(address);
 		
 	return B_OK;
 }

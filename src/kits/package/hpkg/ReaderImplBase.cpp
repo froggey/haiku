@@ -881,6 +881,9 @@ ReaderImplBase::InitSection(PackageFileSection& section, uint64 endOffset,
 	section.currentOffset = 0;
 	section.stringsLength = stringsLength;
 	section.stringsCount = stringsCount;
+	
+	printf("real len: %ld, offset: %ld, str len: %ld, str count: %ld\n",
+		length, endOffset - length, stringsLength, stringsCount);
 
 	return B_OK;
 }
@@ -1360,6 +1363,7 @@ status_t
 ReaderImplBase::ReadSection(const PackageFileSection& section)
 {
 	BBufferDataOutput output(section.data, section.uncompressedLength);
+	printf("ReaderImplBase::ReadSection at %ld (%ld bytes)\n", section.offset, section.uncompressedLength);
 	return fHeapReader->ReadDataToOutput(section.offset,
 		section.uncompressedLength, &output);
 }

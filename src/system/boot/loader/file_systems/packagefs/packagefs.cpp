@@ -841,7 +841,7 @@ packagefs_mount_file(int fd, ::Directory* systemDirectory,
 	kprintf("check init\n");
 	status_t error = packageReader.Init(fd, false, 0);
  	if (error != B_OK) {
-		kprintf("failed\n");
+		kprintf("failed package reader init\n");
  		RETURN_ERROR(error);
 	}
 

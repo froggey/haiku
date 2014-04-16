@@ -68,6 +68,7 @@ BBufferDataReader::ReadData(off_t offset, void* buffer, size_t size)
 	return B_OK;
 }
 
+#include <stdio.h>
 
 status_t
 BBufferDataReader::ReadDataToOutput(off_t offset, size_t size,
@@ -76,8 +77,10 @@ BBufferDataReader::ReadDataToOutput(off_t offset, size_t size,
 	if (size == 0)
 		return B_OK;
 
-	if (offset < 0)
+	if (offset < 0) {
+		printf("B_BAD_VALUE: offset = %ld\n", offset);
 		return B_BAD_VALUE;
+	}
 
 	if (size > fSize || offset > (off_t)fSize - (off_t)size)
 		return B_ERROR;

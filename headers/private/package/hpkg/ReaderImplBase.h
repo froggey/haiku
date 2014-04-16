@@ -524,6 +524,13 @@ ReaderImplBase::Init(int fd, bool keepFD, Header& header, uint32 flags)
 			compressedHeapSize, totalSize, heapOffset);
 		return B_BAD_DATA;
 	}
+	
+	printf("heap compression: %ld, heap chunk size: %ld, heap offset: %ld, compressed heap size: %ld, uncompressed heap size: %ld\n",
+		swap16(header.heap_compression),
+		swap32(header.heap_chunk_size),
+		heapOffset,
+		compressedHeapSize,
+		swap64(header.heap_size_uncompressed));
 
 	error = InitHeapReader(
 		swap16(header.heap_compression),

@@ -331,6 +331,43 @@ PackageReaderImpl::Init(const char* fileName, uint32 flags)
 }
 
 
+inline uint16 __swap16(uint16 val)
+    {
+        return ((((val) >> 8) & 0xff) | (((val) & 0xff) << 8));
+    }
+inline uint32 __swap32(uint32 val)
+    {
+        return ((((val) & 0xff000000) >> 24) |
+                (((val) & 0x00ff0000) >>  8) |
+                (((val) & 0x0000ff00) <<  8) |
+                (((val) & 0x000000ff) << 24));
+    }
+inline uint64 __swap64(uint64 val)
+    {
+        return ((((val) & 0xff00000000000000ull) >> 56) |
+                (((val) & 0x00ff000000000000ull) >> 40) |
+                (((val) & 0x0000ff0000000000ull) >> 24) |
+                (((val) & 0x000000ff00000000ull) >> 8 ) |
+                (((val) & 0x00000000ff000000ull) << 8 ) |
+                (((val) & 0x0000000000ff0000ull) << 24) |
+                (((val) & 0x000000000000ff00ull) << 40) |
+                (((val) & 0x00000000000000ffull) << 56));
+    }
+
+    #define B_BENDIAN_TO_HOST_INT16 __swap16
+    #define B_BENDIAN_TO_HOST_INT32 __swap32
+    #define B_BENDIAN_TO_HOST_INT64 __swap64
+#	define RETURN_ERROR(err)												\
+	{																		\
+		status_t _status = err;												\
+		if (_status < B_OK)	{												\
+			printf("%s:%d: %s\n", __FILE__, __LINE__, strerror(_status));	\
+			while (true) { } ; \
+		} \
+		return _status;														\
+	}
+
+   
 status_t
 PackageReaderImpl::Init(int fd, bool keepFD, uint32 flags)
 {
@@ -342,8 +379,8 @@ PackageReaderImpl::Init(int fd, bool keepFD, uint32 flags)
 		B_HPKG_MINOR_VERSION>(fd, keepFD, header, flags);
 	printf(".. ");
 	if (error != B_OK) {
-		printf("!!\n");	
-		return error;
+		printf("!!\n");
+		RETURN_ERROR(error);
 	}
 	printf(".. ");
 	fHeapSize = UncompressedHeapSize();
@@ -357,8 +394,7 @@ PackageReaderImpl::Init(int fd, bool keepFD, uint32 flags)
 		B_BENDIAN_TO_HOST_INT32(header.attributes_strings_count));
 	printf(".. ");
 	if (error != B_OK) {
-		printf("!!\n");	
-		return error;
+		printf("!!\n");RETURN_ERROR(error);
 	}
 	
 	// init TOC section
@@ -369,8 +405,7 @@ PackageReaderImpl::Init(int fd, bool keepFD, uint32 flags)
 		B_BENDIAN_TO_HOST_INT64(header.toc_strings_count));
 	printf(".. ");
 	if (error != B_OK) {
-		printf("!!\n");	
-		return error;
+		printf("!!\n");RETURN_ERROR(error);
 	}
 	
 	// prepare the sections for use
@@ -378,8 +413,7 @@ PackageReaderImpl::Init(int fd, bool keepFD, uint32 flags)
 	error = PrepareSection(fTOCSection);
 	printf(".. ");
 	if (error != B_OK) {
-		printf("!!\n");	
-		return error;
+		printf("!!\n");RETURN_ERROR(error);
 	}
 	
 	printf(".. ");
@@ -387,10 +421,12 @@ PackageReaderImpl::Init(int fd, bool keepFD, uint32 flags)
 	printf(".. ");
 	if (error != B_OK) {
 		printf("!!\n");	
-		return error;
+		//return error;
+		RETURN_ERROR(error);
 	}
 	
 	printf(":-)\n");
+	while (true) { } ;
 	return B_OK;
 }
 
