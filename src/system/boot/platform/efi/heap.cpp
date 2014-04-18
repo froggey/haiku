@@ -20,7 +20,7 @@ EFI_PHYSICAL_ADDRESS    staging;
 void
 platform_release_heap(struct stage2_args *args, void *base)
 {
-	ASSERT((void*)&staging == base);
+	ASSERT((void*)staging == base);
     kSystemTable->BootServices->FreePages(staging, STAGE_PAGES);
 }
 

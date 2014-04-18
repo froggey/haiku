@@ -88,6 +88,7 @@ main(stage2_args *args)
 
 	if (bootVolume.IsValid()) {
 		// we got a volume to boot from!
+		kprintf("we got a volume to boot from!\n");
 		status_t status;
 		while ((status = load_kernel(args, bootVolume)) < B_OK) {
 			// loading the kernel failed, so let the user choose another
@@ -113,6 +114,7 @@ main(stage2_args *args)
 		// is already loaded at this point and we definitely
 		// know our boot volume, too
 		if (status == B_OK) {
+			kprintf("everything is looking good!\n");
 			if (bootVolume.IsPackaged()) {
 				packagefs_apply_path_blacklist(bootVolume.SystemDirectory(),
 					pathBlacklist);

@@ -14,7 +14,7 @@
 #include <boot/heap.h>
 #include <boot/stage2.h>
 
-//#include "acpi.h"
+#include "acpi.h"
 //#include "apm.h"
 //#include "bios.h"
 #include "console.h"
@@ -115,6 +115,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systemTable)
 
   /* APM - skip entirely */
   /* ACPI - do we need to mmap/checksum it ? Or does EFI help with that.. Is it needed */
+  acpi_init();
   /* smp - TODO */
   /* HPET - TODO */
   /* dump_multiboot_info */
@@ -129,6 +130,5 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systemTable)
    */
   /* Exit boot services - Only use runtime ( and maybe some system services) from here on.
    * See info on memory map and much more in docs. */
-
   	main(&args);
 }
