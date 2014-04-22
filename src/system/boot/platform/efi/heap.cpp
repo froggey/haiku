@@ -10,7 +10,7 @@
 #include <boot/stage2.h>
 #include <boot/stdio.h>
 
-#define STAGE_PAGES     0x10000   /* 256 MB */
+#define STAGE_PAGES     0x2000   /* 32 MB */
 #define PAGE_SIZE			0x1000 /* 4kB */
 
 
@@ -28,18 +28,16 @@ platform_release_heap(struct stage2_args *args, void *base)
 status_t
 platform_init_heap(struct stage2_args *args, void **_base, void **_top)
 {
-	size_t heap_size = args->heap_size / PAGE_SIZE;
-	while ((kSystemTable->BootServices->AllocatePages(
-        AllocateAnyPages, EfiLoaderData, STAGE_PAGES, &staging)
-			!= EFI_SUCCESS) && (heap_size >= STAGE_PAGES)) {
-				heap_size /= 2;
-			}
-    kprintf("heap address = %lx, size = %d pages\n", staging, heap_size);
-    if (staging == 0l)
-        return B_NO_MEMORY;
+	if (kSystemTable->BootServices->AllocatePages(
+		AllocateAnyPages, EfiLoaderData, STAGE_PAGES, &staging)
+			!= EFI_SUCCESS)
+		return B_NO_MEMORY;
+	
+    kprintf("heap address = %lx, size = %d pages\n", staging, STAGE_PAGES);
     
     *_base = (void *)staging;
-    *_top = (void *)((int8 *)staging + heap_size);
+    *_top = (void *)((int8 *)staging + STAGE_PAGES * PAGE_SIZE);
+	kprintf("heap size = %ld\n", (uint64)*_top - (uint64)*_base);
     kprintf("heap: base = %lx, top = %lx\n", (uint64)*_base, (uint64)*_top);
     return B_OK;
 }
